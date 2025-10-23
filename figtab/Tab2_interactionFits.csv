@@ -1,0 +1,12 @@
+jump;rep;Parameter;description;K;effSize;maxLoglik;deltaAIC;Baseline;estimate
+3;-1;delta1;Susceptibility to influenza affected by active infection with RSV;67;392,51117847322058;-11144,6723175442;79,88002835600128;1,000;0.4 (0-1.8)
+5;-1;theta1;Hospitalisation with influenza affected by active infection with RSV;67;11412,06347660085521;-11153,8525315306;61,51960038320249;1,000;0.2 (0-0.6)
+4;-1;sigma1;Transmission of influenza affected by active infection with RSV;67;5,98763770152511;-11160,1101774248;49,00430859480184;1,000;0.1 (0-8.5)
+2;-1;1/psi1;Duration of influenza refractory period Rf (weeks);67;29,66934076374639;-11162,2096273156;44,80540881320121;0,001;12 (0-1000)
+7;-1;1/psi2;Duration of RSV refractory period Rf (weeks);67;24,62151260878700;-11168,1821998148;32,86026381480042;0,001;53 (0-722.1)
+8;-1;delta2;Susceptibility to RSV affected by active infection with influenza;67;109,95085462817039;-11168,3124108853;32,59984167380026;1,000;0.4 (0-3.1)
+9;-1;sigma2;Transmission of RSV affected by active infection with influenza;67;28,76746631845001;-11176,4338955228;16,35687239880281;1,000;0.1 (0-7.2)
+10;-1;theta2;Hospitalisation with RSV affected by active infection with influenza;67;7936,34959686836191;-11180,5234869028;8,17768963880008;1,000;0.6 (0-1.7)
+1;-1;1/omega1;Duration of influenza residually positive period Rv (weeks);67;75,15004178747083;-11182,4146351473;4,39539314980357;0,001;0 (0-5.7)
+0;-1;BASELINE;no interaction;66;NA;-11185,6123317222;0,00000000000000;1,000;NA (NA-NA)
+6;-1;1/omega2;Duration of RSV residually positive period Rv (weeks);67;93,10955533557906;-11185,2521776100;-1,27969177559862;0,001;0 (0-0.3)

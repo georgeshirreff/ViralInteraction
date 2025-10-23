@@ -1,0 +1,16 @@
+jump;Parameter;virus;description
+0;BASELINE;;no interaction
+1;omega;1;Progression out of influenza residually positive period Rv
+2;psi;1;Progression out of influenza refractory period Rf
+3;delta;1;Susceptibility to influenza affected by active infection with RSV
+4;sigma;1;Transmission of influenza affected by active infection with RSV
+5;theta;1;Hospitalisation with influenza affected by active infection with RSV
+6;omega;2;Progression out of RSV residually positive period Rv
+7;psi;2;Progression out of RSV refractory period Rf
+8;delta;2;Susceptibility to RSV affected by active infection with influenza
+9;sigma;2;Transmission of RSV affected by active infection with influenza
+10;theta;2;Hospitalisation with RSV affected by active infection with influenza
+1;1/omega;1;Duration of influenza residually positive period Rv (weeks)
+2;1/psi;1;Duration of influenza refractory period Rf (weeks)
+6;1/omega;2;Duration of RSV residually positive period Rv (weeks)
+7;1/psi;2;Duration of RSV refractory period Rf (weeks)

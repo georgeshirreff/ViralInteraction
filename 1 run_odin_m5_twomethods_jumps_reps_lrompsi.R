@@ -1,3 +1,19 @@
+# Epidemiological model of interactions between two seasonal respiratory viruses
+# Copyright (C) 2025 George Shirreff
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #odin
 # library(odin2)
 library(tidyverse) 
@@ -11,16 +27,16 @@ source("odin_m5.R")
 if(grepl("C:", getwd())){
   virus1 = "Influenza"
   virus2 = "RSV"
-  include_ili = (virus1 == "Influenza") & (virus2 == "RSV")
-  id = "validateSimpleInter_" #"simpleInter_" #
-  append = T
-  method = "cyc" #"basic" #"mod" #"basic" #
-  this_jump = 9
+  include_ili = (virus1 == "Influenza") & (virus2 == "RSV") # should the ILI data be included?
+  id = "estimateSingleInteractions_" #
+  append = F #should the data be appended to an existing analysis?
+  method = "cyc" #"basic" #"mod" #
+  this_jump = 9 #which line in the proposal file should be used (baseline is 0)
   jumpfile = "interactiononly" #"all" #"all_BIGeta_BIGompsi" #"all" #"interactiononly" #"etabeta" #"kappalh" #
-  this_rep = 0
-  new_iter_total = 10000
-  thin = 1
-  save_every = 1000
+  this_rep = 0 #repeats, with the same parameters and proposals
+  new_iter_total = 1000 #the number of new iterations to add
+  thin = 1 #how many iterations should be saved (to save file space, increase this number to 10, 100, 1000 etc)
+  save_every = 1000 #how often should the results be saved?
   
 } else {
   cmds = commandArgs(trailingOnly = T)
@@ -51,12 +67,12 @@ allcatch_inc_age <- read_tsv("data/allcatch_inc_age.tsv", show_col_types = F)
 allcatch_coinc_age <- read_tsv("data/allcatch_coinc_age.tsv", show_col_types = F)
 # spenc <- read_csv("data/Spencer_params.csv")
 # age_contact_standardised <- read_tsv("data/age_contact_standardised.tsv")
-ili <- read_tsv("data/allcatch_ili_age2.tsv", show_col_types = F) %>% 
+ili <- read_tsv("data_public/allcatch_ili_age2.tsv", show_col_types = F) %>% 
   filter(!(season %in% c("20/21"))) %>% 
   rename(age2_group = age_group, t = iso_standard) %>% 
   select(-virus, -CatchmentPop)
 
-census2022 <- read_csv("~/SanOdin/data/census2022.csv", show_col_types = F)
+census2022 <- read_csv("data_public/census2022.csv", show_col_types = F)
 
 # this_virus = "Influenza"
 param_lower = read_csv(file = paste0("input/lrodin2v_lower.csv"), show_col_types = F) %>% unlist
@@ -129,10 +145,8 @@ data_catchments_weights = dat_2virus %>%
 
 if(!append){
   read_params <- read_csv(file =
-                            paste0("~/SanOdin/output/", id, virus1, "+", virus2, "_jump", this_jump, "_rep", this_rep, "_bestParams.csv")
-                            # paste0("~/SanOdin/output/", "projectEta_", virus1, "+", virus2, "_jump", 0, "_rep", 0, "_bestParams.csv")
-                            # paste0("~/SanOdin/input/odin2v_", virus1, "+", virus2, "_posteriorSource.csv")
-                          , show_col_types = F)
+                            paste0("output/", id, virus1, "+", virus2, "_jump", this_jump, "_rep", this_rep, "_bestParams.csv")
+                            , show_col_types = F)
   
   mcmc_post = read_params %>% 
     mutate(Iteration = 0, Loglik = NA, Accepted = NA_real_, Season = "All") %>% 
@@ -160,6 +174,8 @@ if(!append){
 
 if(method == "mod"){
   #### METHOD modMCMC ####
+  # runs adaptive MCMC
+  
   
   # iter_chunk = 200
 
@@ -202,6 +218,8 @@ if(method == "mod"){
 # set.seed(1)
 if(method %in% c("cyc", "basic")){
   #### METHOD cyclic ####
+  # "cyc" runs through a cycle of proposals by season
+  # "basic" proposes all parameters simultaneously
   
   current_params = param_start
   
@@ -344,11 +362,11 @@ if(method %in% c("cyc", "basic")){
 
 
 #######################
+## some basic processing ##
 
 if(F){
-  # id = "neglectedVs_"
-  # id = "simpleInter_"
-  id = "newvalidateSimpleInter_"
+  
+  id = "estimateSingleInteractions_"
   plot_post_2v(stem = "output/", id = id, virus1 = "Influenza", virus2 = "RSV", 
                jump = 1, rep = 1,
                burnin = 0, thin = 1,
@@ -368,7 +386,7 @@ if(F){
   } else {
     interaction_params_excl = interaction_params[-check_jump]
   }
-  compare_reps(stem = "output/", id = "newvalidateSimpleInter_", virus1 = "Influenza", virus2 = "RSV", 
+  compare_reps(stem = "output/", id = "estimateSingleInteractions_", virus1 = "Influenza", virus2 = "RSV", 
                jump = check_jump, reps = 0:5,
                thin = 10,
                # exclude_params = c(paste0(rep(c("alpha", "gamma", "omega", "psi", "delta", "sigma", "theta"), each = 2), 1:2), paste0("pi_", age_vec))
@@ -377,7 +395,7 @@ if(F){
                # exclude_params = c("alpha1", "gamma1", "alpha2", "gamma2", paste0("pi_", age_vec))
   )
   
-  plot_post_2v(stem = "output/", id = "newvalidateSimpleInter_", virus1 = "Influenza", virus2 = "RSV", 
+  plot_post_2v(stem = "output/", id = "estimateSingleInteractions_", virus1 = "Influenza", virus2 = "RSV", 
                jump = check_jump, rep = 0,
                burnin = 0, thin = 1,
                exclude_params = c(interaction_params_excl, paste0(rep(c("alpha", "gamma"
@@ -395,7 +413,7 @@ if(F){
                     1e5, 2e5, 1e5, 2e5, 1e5, 
                     1e5, 1e5, 1.5e5, 1e5, 1e5))
   
-  compare_reps(stem = "output/", id = "simpleInter_", virus1 = "Influenza", virus2 = "RSV", 
+  compare_reps(stem = "output/", id = "estimateSingleInteractions_", virus1 = "Influenza", virus2 = "RSV", 
                jump = 6, reps = 0,
                thin = 10,
                # exclude_params = c(paste0(rep(c("alpha", "gamma", "omega", "psi", "delta", "sigma", "theta"), each = 2), 1:2), paste0("pi_", age_vec))
@@ -425,7 +443,7 @@ if(F){
     facet_grid(season~virus, scales = "free")
     
   
-  best_params <- read_csv(paste0("output/", id = "validateSimpleInter_", virus1, "+", virus2, "_jump", 3, "_rep", 1, "_bestParams.csv"))
+  best_params <- read_csv(paste0("output/", id = "estimateSingleInteractions_", virus1, "+", virus2, "_jump", 3, "_rep", 1, "_bestParams.csv"))
   
   #' @UPDATE-FIGURE4 
   

@@ -1,3 +1,19 @@
+# Epidemiological model of interactions between two seasonal respiratory viruses
+# Copyright (C) 2025 George Shirreff
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # compare_reps <- function(stem = "output/", id = id, virus1 = virus1, virus2 = virus2, 
 #                          jump = 0, reps = 0:5, burnin = 0, thin = 1, 
 #                          exclude_params = c(paste0(rep(c("alpha", "gamma", "omega", "psi", "delta", "sigma", "theta"), each = 2), 1:2), paste0("pi_", age_vec))

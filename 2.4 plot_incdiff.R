@@ -17,7 +17,7 @@
 # plot size of difference
 
 #' @UPDATE-FIGURE5 
-
+id = "validateSimpleInter_"
 best_params <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_bestParams.csv"))
 post <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_posterior.csv"))
 
@@ -56,6 +56,7 @@ sample_params = post[sample(x = nrow(post), size = N), ] %>%
   select(-Season)
 
 sample_ModelHosp <- map(split(sample_params, 1:nrow(sample_params)), 
+  # split(sample_params[1:3, ], 1:3), 
     .f = function(p) generate_ModelHosp_season(pars = unlist(p), generator = m5_generator, dat_2virus = dat_2virus,
                                                data_catchments_weights = data_catchments_weights)$hosp %>% 
       group_by(season, t, virus) %>% 
@@ -101,6 +102,13 @@ incdiff <- best_ModelHosp %>%
   mutate(across(ends_with("Inc"), ~.x/CatchmentPop*1e5)) %>%
   mutate(IncDiff = (Inc - BaselineInc)) %>% 
   mutate(virus =fct_recode(factor(virus, levels = c(1, 2, 12)), `Influenza only`="1", `RSV only`="2", `Codetection`="12"))
+
+# calculate the proportion of the data points fall inside the 95% credibility interval
+incdiff %>% 
+  ungroup %>% 
+  mutate(inblue = ((DataInc < LoInc) | (DataInc > HiInc))) %>% 
+  group_by(virus) %>% 
+  summarise(codetection_inblue = mean(inblue))
 
 best_ModelHosp %>% 
   filter(virus == 1, season == "11/12") %>% 

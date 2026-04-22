@@ -640,7 +640,9 @@ get_loglik_ili <- function(ili, tib_ModelILI, return_vector = F){
 # pars = best_params %>% select(-Loglik) %>% unlist
 # generator = m5_generator
 # dat_2vi
-compute_ss <- function(pars, generator, dat_2virus, ili, include_ili = T, data_catchments_weights, make_loglik = F, return_solution = F){
+compute_ss <- function(change_pars, fixed_pars = NULL, generator, dat_2virus, ili, include_ili = T, data_catchments_weights, make_loglik = F, return_solution = F){
+  
+  pars = c(change_pars, fixed_pars)
   model_out <- generate_ModelHosp_season(pars, generator, dat_2virus, data_catchments_weights)
   tib_ModelHosp <- model_out$hosp
   tib_ModelILI <- model_out$ili

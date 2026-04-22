@@ -94,7 +94,7 @@ incdiff <- best_ModelHosp %>%
   left_join(nointer_ModelHosp) %>% 
   left_join(datainc) %>% 
   left_join(catchment_season) %>%
-  left_join(sample_ModelHosp_LoHi) %>% 
+  left_join(sample_ModelHosp_LoHi) %>%
   # left_join(dat_2virus %>% 
   #             filter(t == 0, virus == 1) %>% 
   #             group_by(season) %>% 

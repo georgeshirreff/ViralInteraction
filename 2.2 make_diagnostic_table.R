@@ -135,7 +135,7 @@ param_table <- function(stem = "output/", id, virus1, virus2,
   
 }
 
-
+j = 0
 # View(classif)
 aic_table = NULL
 aic_comp = NULL

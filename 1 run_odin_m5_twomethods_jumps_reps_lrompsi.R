@@ -380,14 +380,15 @@ if(F){
   )
   
   
-  check_jump = 1
+  check_jump = 0
   interaction_params = param_start %>% names %>% rev %>% {.[1:10]} %>% rev
   if(check_jump == 0){
     interaction_params_excl = NULL
   } else {
     interaction_params_excl = interaction_params[-check_jump]
   }
-  compare_reps(stem = "output/", id = "estimateSingleInteractions_", virus1 = "Influenza", virus2 = "RSV", 
+  
+  compare_reps(stem = "output/", id = "simpleInter_", virus1 = "Influenza", virus2 = "RSV", 
                jump = check_jump, reps = 0:5,
                thin = 10,
                # exclude_params = c(paste0(rep(c("alpha", "gamma", "omega", "psi", "delta", "sigma", "theta"), each = 2), 1:2), paste0("pi_", age_vec))
@@ -396,7 +397,7 @@ if(F){
                # exclude_params = c("alpha1", "gamma1", "alpha2", "gamma2", paste0("pi_", age_vec))
   )
   
-  plot_post_2v(stem = "output/", id = "estimateSingleInteractions_", virus1 = "Influenza", virus2 = "RSV", 
+  plot_post_2v(stem = "output/", id = "simpleInter_", virus1 = "Influenza", virus2 = "RSV", 
                jump = check_jump, rep = 0,
                burnin = 0, thin = 1,
                exclude_params = c(interaction_params_excl, paste0(rep(c("alpha", "gamma"

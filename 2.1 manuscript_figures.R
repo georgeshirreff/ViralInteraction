@@ -47,7 +47,7 @@ dat <- allcatch_inc_age %>%
     # season == this_season
   )
 
-ili <- read_tsv("data/allcatch_ili_age2.tsv") %>% 
+ili <- read_tsv("data_public/allcatch_ili_age2.tsv") %>% 
   filter(!(season %in% c("20/21"))) %>% 
   rename(age2_group = age_group, t = iso_standard) %>% 
   select(-virus, -CatchmentPop)

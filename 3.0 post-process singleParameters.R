@@ -27,8 +27,8 @@ param_jumps %>%
 
 K = 66
 
-this_rep = 0
-this_jump = 4
+this_rep = 3
+this_jump = 3
 for(this_rep in 0:5){
   baseline_stem = paste0("output/", read_id, virus1, "+", virus2, "_jump", 0, "_rep", this_rep)
   baseline_post <- read_csv(file = paste0(baseline_stem, "_posterior.csv"), show_col_types = F) %>% 
@@ -174,7 +174,7 @@ AICimprovement_table %>%
   arrange(best_AIC)
 
 AICimprovement_table %>% 
-  filter(rep == 5) %>% 
+  filter(rep == 0) %>% 
   filter(jump < 11) %>%
   # filter(rep == 0) %>% 
   arrange(best_AIC) %>% 
@@ -188,17 +188,28 @@ AICimprovement_table %>%
   mutate(deltaAIC = case_when(deltaAIC > 0 ~ format(round(deltaAIC, 1), digits = 2), 
                               deltaAIC == 0 ~ "0", 
                               T ~ "<0")) %>% 
-  mutate(Estimate = ifelse(deltaAIC == "<0", NA, Estimate))
+  mutate(Estimate = ifelse(deltaAIC == "<0", NA, Estimate)) %>% 
+  write_csv2("figtab/Tab2_interactionFits_twoStage.csv")
+
+
 
 
 
 AICimprovement_table %>% 
-  # filter(jump < 11) %>% 
-  filter(best_AIC < baseline_aic) %>% 
-  ggplot(aes(y = rep)) + 
+  filter(jump < 11) %>%
+  mutate(across(c("paramDefault1", "best1", "lo1_AICimprovement", "hi1_AICimprovement"), ~ifelse(grepl("^lr", param1), 10^.x, .x))) %>%
+  mutate(param1 = gsub("^lr", "1/", param1)) %>% 
+  separate(col = "param1", into = c("param", "virus"), sep = -1, remove = F) %>% 
+  mutate(virus = c("Influenza", "RSV")[as.numeric(virus)]) %>% 
+  mutate(valid = ifelse(best_AIC < baseline_aic, "Improvement", "No improvement")) %>% 
+  ggplot(aes(y = rep, colour = valid)) + 
   geom_point(aes(x = best1)) + 
   geom_errorbarh(aes(xmin = lo1_AICimprovement, xmax = hi1_AICimprovement)) + 
-  facet_wrap(.~param1, scales = "free_x")
+  facet_grid(virus~param, scales = "free_x") + 
+  theme_bw() + 
+  labs(x = "Parameter value", y = "Repeat", colour = "")
+
+ggsave(filename = "figtab/compare_repetitions_improvement.png", width = 28, height = 12, units = "cm", dpi = 300)
   
 
 AICimprovement_table %>% 

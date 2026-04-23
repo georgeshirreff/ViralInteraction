@@ -1,43 +1,25 @@
 virus;in_phase;estimate;averted;shift
-Influenza only;Original;"Low
-Best
-High";"-9 (-3%)
-4 (1%)
-5 (1%)";"-1
-1
-1"
-Influenza only;Simultaneous peaks;"Low
-Best
-High";"-20 (-6%)
-13 (4%)
-19 (6%)";"-1
-0
-0"
-RSV only;Original;"Low
-Best
-High";"0 (0%)
-0 (0%)
+Influenza only;Original;"Best (theta1)
+2nd best (psi1)";"0 (0%)
 0 (0%)";"0
-0
 0"
-RSV only;Simultaneous peaks;"Low
-Best
-High";"0 (0%)
-0 (0%)
+Influenza only;Simultaneous peaks;"Best (theta1)
+2nd best (psi1)";"0 (0%)
 0 (0%)";"0
-0
 0"
-Codetection;Original;"Low
-Best
-High";"-7 (-176%)
-3 (67%)
-3 (81%)";"-1
-1
-1"
-Codetection;Simultaneous peaks;"Low
-Best
-High";"-13 (-122%)
-6 (56%)
-7 (70%)";"0
-0
+RSV only;Original;"Best (theta1)
+2nd best (psi1)";"0 (0%)
+5 (2%)";"0
+0"
+RSV only;Simultaneous peaks;"Best (theta1)
+2nd best (psi1)";"0 (0%)
+19 (8%)";"0
+-1"
+Codetection;Original;"Best (theta1)
+2nd best (psi1)";"2 (62%)
+0 (3%)";"0
+0"
+Codetection;Simultaneous peaks;"Best (theta1)
+2nd best (psi1)";"5 (57%)
+1 (6%)";"0
 0"

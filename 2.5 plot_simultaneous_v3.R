@@ -30,38 +30,31 @@ nextbest_params = nextbest_post %>%
 
 
 season_vec
-original <- generate_ModelHosp_season(pars = best_params %>%
-                            select(-Loglik) %>%
-                            unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                          data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = T, intLevel = "best", in_phase = F)
 
 nointer <- generate_ModelHosp_season(pars = baseline_params %>% 
                                        select(-Loglik) %>%
                                        unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                                      data_catchments_weights = data_catchments_weights)$hosp %>% 
+                                     data_catchments_weights = data_catchments_weights)$hosp %>% 
   mutate(interaction = F, intLevel = NA, in_phase = F)
 
-interHi <- generate_ModelHosp_season(pars = baseline_params %>% 
+bestinter <- generate_ModelHosp_season(pars = best_params %>%
+                            select(-Loglik) %>%
+                            unlist, generator = m5_generator, dat_2virus = dat_2virus,
+                          data_catchments_weights = data_catchments_weights)$hosp %>% 
+  mutate(interaction = T, intLevel = "theta1", in_phase = F)
+
+
+nextbestinter <- generate_ModelHosp_season(pars = nextbest_params %>% 
                                        select(-Loglik) %>%
                                        replace("theta1", 0) %>% 
                                        unlist, generator = m5_generator, dat_2virus = dat_2virus,
                                      data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = T, intLevel = "hi", in_phase = F)
-
-interLo <- generate_ModelHosp_season(pars = baseline_params %>% 
-                                       select(-Loglik) %>%
-                                       replace("theta1", 0.6) %>% 
-                                       unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                                      data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = T, intLevel = "lo", in_phase = F)
-
-
+  mutate(interaction = T, intLevel = "psi1", in_phase = F)
 
 
 # best_params["eta2_1213"]
 # best_params["eta1_1213"]
-phase <- generate_ModelHosp_season(pars = best_params %>%
+phase_noninter <- generate_ModelHosp_season(pars = baseline_params %>%
                                      replace("eta1_1213", -17.0) %>% 
                                      
                                         select(-Loglik) %>%
@@ -76,29 +69,20 @@ phase %>%
   summarise(Inc = sum(Inc)) %>% 
   ggplot(aes(x = t, y = Inc, colour = virus)) + geom_line()
 
-phase_nointer <- generate_ModelHosp_season(pars = baseline_params %>% 
+phase_bestinter <- generate_ModelHosp_season(pars = best_params %>%
+                                               replace("eta1_1213", -17.0) %>% 
+                                               select(-Loglik) %>%
+                                         unlist, generator = m5_generator, dat_2virus = dat_2virus,
+                                       data_catchments_weights = data_catchments_weights)$hosp %>% 
+  mutate(interaction = T, intLevel = "theta1", in_phase = T)
+
+
+phase_nextbestinter <- generate_ModelHosp_season(pars = nextbest_params %>% 
                                              replace("eta1_1213", -17.0) %>% 
                                              select(-Loglik) %>%
                                              unlist, generator = m5_generator, dat_2virus = dat_2virus,
                                            data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = F, intLevel = NA, in_phase = T)
-
-
-phase_interHi <- generate_ModelHosp_season(pars = baseline_params %>% 
-                                             replace("eta1_1213", -17.0) %>% 
-                                             replace("theta1", 0) %>% 
-                                             select(-Loglik) %>%
-                                             unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                                           data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = T, intLevel = "hi", in_phase = T)
-
-phase_interLo <- generate_ModelHosp_season(pars = baseline_params %>% 
-                                             replace("eta1_1213", -17.0) %>% 
-                                             replace("theta1", 0.6) %>% 
-                                             select(-Loglik) %>%
-                                             unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                                           data_catchments_weights = data_catchments_weights)$hosp %>% 
-  mutate(interaction = T, intLevel = "lo", in_phase = T)
+  mutate(interaction = T, intLevel = "psi1", in_phase = T)
 
 
 
@@ -113,7 +97,7 @@ phase_interLo <- generate_ModelHosp_season(pars = baseline_params %>%
 #   mutate(interaction = ifelse(interaction, "Interaction", "No interaction")) %>% 
 #   mutate(in_phase = ifelse(in_phase, "Simultaneous peaks", "Original"))
 
-comp_table <- rbind(original, nointer, interLo, interHi, phase, phase_interLo, phase_interHi, phase_nointer) %>% 
+comp_table <- rbind(nointer, bestinter, nextbestinter, phase_nointer, phase_bestinter, phase_nextbestinter) %>% 
   filter(season == "12/13") %>% 
   group_by(virus, in_phase, interaction, intLevel, t) %>% 
   summarise(Inc = sum(Inc)) %>% 
@@ -127,28 +111,23 @@ comp_table <- rbind(original, nointer, interLo, interHi, phase, phase_interLo, p
 
 comp_table_wide <- comp_table %>% 
   pivot_wider(id_cols = c("virus", "in_phase"), names_from = c("interaction", "intLevel"), values_from = c("Inc", "peak_time")) %>% 
-  mutate(averted_best = `Inc_No interaction_NA` - `Inc_Interaction_best`, 
-         averted_hi = `Inc_No interaction_NA` - `Inc_Interaction_hi`, 
-         averted_lo = `Inc_No interaction_NA` - `Inc_Interaction_lo`) %>% 
-  mutate(pAverted_best = averted_best/`Inc_No interaction_NA`, 
-         pAverted_hi = averted_hi/`Inc_No interaction_NA`,
-         pAverted_lo = averted_lo/`Inc_No interaction_NA`) %>% 
+  mutate(averted_theta1 = `Inc_No interaction_NA` - `Inc_Interaction_theta1`, 
+         averted_psi1 = `Inc_No interaction_NA` - `Inc_Interaction_psi1`) %>% 
+  mutate(pAverted_theta1 = averted_theta1/`Inc_No interaction_NA`, 
+         pAverted_psi1 = averted_psi1/`Inc_No interaction_NA`) %>% 
   relocate(starts_with("peak_time"), .after = everything()) %>% 
-  mutate(shift_best = `peak_time_Interaction_best` - `peak_time_No interaction_NA`, 
-         shift_hi = `peak_time_Interaction_hi` - `peak_time_No interaction_NA`, 
-         shift_lo = `peak_time_Interaction_lo` - `peak_time_No interaction_NA`) %>% 
-  mutate(averted_best = paste0(round(averted_best), " (", round(pAverted_best*100), "%)"), 
-         averted_hi = paste0(round(averted_hi), " (", round(pAverted_hi*100), "%)"), 
-         averted_lo = paste0(round(averted_lo), " (", round(pAverted_lo*100), "%)")) %>% 
+  mutate(shift_theta1 = `peak_time_Interaction_theta1` - `peak_time_No interaction_NA`, 
+         shift_psi1 = `peak_time_Interaction_psi1` - `peak_time_No interaction_NA`) %>% 
+  mutate(averted_theta1 = paste0(round(averted_theta1), " (", round(pAverted_theta1*100), "%)"), 
+         averted_psi1 = paste0(round(averted_psi1), " (", round(pAverted_psi1*100), "%)")) %>% 
   select(virus, in_phase, starts_with("averted"), starts_with("shift")) %>% 
   ungroup
 
 comp_table_wide_long <-
   comp_table_wide %>% pivot_longer(-c("virus", "in_phase"), names_sep = "_", names_to = c(".value", "intLevel")) %>% 
-  mutate(estimate = case_match(intLevel, "best" ~ "Best", 
-                               "hi" ~ "High", 
-                               "lo" ~ "Low")) %>% 
-  mutate(estimate = factor(estimate, levels = c("Low", "Best", "High"))) %>% 
+  mutate(estimate = case_match(intLevel, "theta1" ~ "Best (theta1)", 
+                               "psi1" ~ "2nd best (psi1)")) %>% 
+  mutate(estimate = factor(estimate, levels = c("Best (theta1)", "2nd best (psi1)"))) %>% 
   arrange(virus, in_phase, estimate) %>% 
   group_by(virus, in_phase) %>% 
   summarise(across(c("estimate", "averted", "shift"), ~paste0(.x, collapse = "\n")))
@@ -167,12 +146,11 @@ df <- tibble(x   = rep(Inf, length(tbs)),
 write_csv2(comp_table_wide_long, file = "figtab/Tab3_simultaneouspeaks_lobesthi.csv")
 
 vir_cols = c("Influenza only"="red", "RSV only" = "blue", Codetection ="violet")
-simult_plot <- rbind(original, nointer, interLo, interHi, phase, phase_interLo, phase_interHi, phase_nointer) %>% 
+simult_plot <- rbind(nointer, bestinter, nextbestinter, phase_nointer, phase_bestinter, phase_nextbestinter) %>% 
   filter(season == "12/13") %>% 
-  mutate(intLevel = case_match(intLevel, "best" ~ "Best estimate", 
-                               "lo" ~ "Low estimate", 
-                               "hi" ~ "High estimate")) %>% 
-  mutate(intLevel = factor(intLevel, levels = c("None", "Low estimate", "Best estimate", "High estimate"))) %>% 
+  mutate(intLevel = case_match(intLevel, "theta1" ~ "Best (theta1)", 
+                               "psi1" ~ "2nd best (psi1)")) %>% 
+  mutate(intLevel = factor(intLevel, levels = c("None", "Best (theta1)", "2nd best (psi1)"))) %>% 
   mutate(intLevel = replace_na(intLevel, "None")) %>% 
   # filter(!intLevel == "None") %>% 
   group_by(virus, in_phase, intLevel, t) %>% 
@@ -184,7 +162,7 @@ simult_plot <- rbind(original, nointer, interLo, interHi, phase, phase_interLo, 
   ggplot(aes(x = t, y = Inc, colour = virus, linetype = intLevel)) + 
   geom_line() + 
   # scale_colour_manual(values = vir_cols)+ 
-  scale_linetype_manual(values = c(None = "solid", `Best estimate` = "dashed", `High estimate` = "dotted", `Low estimate` = "dotdash")) + 
+  scale_linetype_manual(values = c(None = "solid", `Best (theta1)` = "dashed", `2nd best (psi1)` = "dotted", `Low estimate` = "dotdash")) + 
   facet_grid(. ~ in_phase) + 
   theme_bw() + 
   labs(x = "Weeks relative to start of year", 

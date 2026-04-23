@@ -17,9 +17,20 @@
 # plot size of difference
 
 #' @UPDATE-FIGURE5 
-id = "validateSimpleInter_"
-best_params <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_bestParams.csv"))
-post <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_posterior.csv"))
+
+# from paper version v16
+# id = "validateSimpleInter_"
+# best_params <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_bestParams.csv"))
+# post <- read_csv(paste0("output/", id, virus1, "+", virus2, "_jump", 3, "_rep", 1, "_posterior.csv"))
+
+# from paper version 17
+id = "noInter_"
+remove(post)
+best_post <- read_csv2(paste0("output/", id = "interOnly_", virus1, "+", virus2, "_jump", 5, "_rep", 0, "_posterior.csv")) %>% 
+  select(-Accepted, -Season)
+best_params = best_post %>% 
+  arrange(-Loglik) %>% 
+  slice(1)
 
 
 plot_model_data(pars = best_params %>%
@@ -38,42 +49,37 @@ best_ModelHosp <- generate_ModelHosp_season(pars = best_params %>%
                                               select(-Loglik) %>%
                                               unlist, generator = m5_generator, dat_2virus = dat_2virus,
                                             data_catchments_weights = data_catchments_weights
-)$hosp
-
-
-best_ModelHosp <- generate_ModelHosp_season(pars = best_params %>%
-                                              select(-Loglik) %>%
-                                              unlist, generator = m5_generator, dat_2virus = dat_2virus,
-                                            data_catchments_weights = data_catchments_weights
 )$hosp %>% 
   group_by(season, t, virus) %>% 
-  summarise(Inc = sum(Inc))
-
-# make a subsample
-N = 1000
-set.seed(1)
-sample_params = post[sample(x = nrow(post), size = N), ] %>% 
-  select(-Season)
-
-sample_ModelHosp <- map(split(sample_params, 1:nrow(sample_params)), 
-  # split(sample_params[1:3, ], 1:3), 
-    .f = function(p) generate_ModelHosp_season(pars = unlist(p), generator = m5_generator, dat_2virus = dat_2virus,
-                                               data_catchments_weights = data_catchments_weights)$hosp %>% 
-      group_by(season, t, virus) %>% 
-      summarise(Inc = sum(Inc)), 
-    .progress = list(
-        type = "iterator", 
-        format = "Calculating {cli::pb_bar} {cli::pb_percent}",
-        clear = TRUE)) %>% 
-  data.table::rbindlist(idcol = "rep") %>% 
-  as_tibble
+  summarise(Inc = sum(Inc)) %>% 
+  mutate(loCIInc = qpois(0.025, Inc, lower.tail = T), 
+         hiCIInc = qpois(0.025, Inc, lower.tail = F))
 
 
-sample_ModelHosp_LoHi <- sample_ModelHosp %>% 
-  group_by(season, t, virus) %>% 
-  summarise(LoInc = quantile(Inc, 0.025), HiInc = quantile(Inc, 0.975))
-
-
+# # make a subsample
+# N = 1000
+# set.seed(1)
+# sample_params = post[sample(x = nrow(best_post), size = N), ] %>% 
+#   select(-Season)
+# 
+# sample_ModelHosp <- map(split(sample_params, 1:nrow(sample_params)), 
+#                         # split(sample_params[1:3, ], 1:3), 
+#                         .f = function(p) generate_ModelHosp_season(pars = unlist(p), generator = m5_generator, dat_2virus = dat_2virus,
+#                                                                    data_catchments_weights = data_catchments_weights)$hosp %>% 
+#                           group_by(season, t, virus) %>% 
+#                           summarise(Inc = sum(Inc)), 
+#                         .progress = list(
+#                           type = "iterator", 
+#                           format = "Calculating {cli::pb_bar} {cli::pb_percent}",
+#                           clear = TRUE)) %>% 
+#   data.table::rbindlist(idcol = "rep") %>% 
+#   as_tibble
+# 
+# 
+# sample_ModelHosp_LoHi <- sample_ModelHosp %>% 
+#   group_by(season, t, virus) %>% 
+#   summarise(LoInc = quantile(Inc, 0.025), HiInc = quantile(Inc, 0.975))
+# remove(sample_ModelHosp_LoHi)
 
 nointer_ModelHosp <- generate_ModelHosp_season(pars = best_params %>%
                                                  mutate(across(starts_with(c("lromega", "lrpsi")), ~-3), 
@@ -90,11 +96,12 @@ datainc = dat_2virus %>%
   group_by(season, t, virus) %>% 
   summarise(DataInc = sum(Inc, na.rm = T))
 
+
 incdiff <- best_ModelHosp %>% 
   left_join(nointer_ModelHosp) %>% 
   left_join(datainc) %>% 
   left_join(catchment_season) %>%
-  left_join(sample_ModelHosp_LoHi) %>%
+  # left_join(sample_ModelHosp_LoHi) %>%
   # left_join(dat_2virus %>% 
   #             filter(t == 0, virus == 1) %>% 
   #             group_by(season) %>% 
@@ -103,22 +110,22 @@ incdiff <- best_ModelHosp %>%
   mutate(IncDiff = (Inc - BaselineInc)) %>% 
   mutate(virus =fct_recode(factor(virus, levels = c(1, 2, 12)), `Influenza only`="1", `RSV only`="2", `Codetection`="12"))
 
-# calculate the proportion of the data points fall inside the 95% credibility interval
-incdiff %>% 
-  ungroup %>% 
-  mutate(inblue = ((DataInc < LoInc) | (DataInc > HiInc))) %>% 
-  group_by(virus) %>% 
-  summarise(codetection_inblue = mean(inblue))
+# # calculate the proportion of the data points fall inside the 95% credibility interval
+# incdiff %>% 
+#   ungroup %>% 
+#   mutate(inblue = ((DataInc < LoInc) | (DataInc > HiInc))) %>% 
+#   group_by(virus) %>% 
+#   summarise(codetection_inblue = mean(inblue))
 
 best_ModelHosp %>% 
-  filter(virus == 1, season == "11/12") %>% 
+  # filter(virus == 1, season == "11/12") %>% 
   pull(Inc) %>% sum
 nointer_ModelHosp %>% 
-  filter(virus == 1, season == "11/12") %>% 
+  # filter(virus == 1, season == "11/12") %>% 
   pull(BaselineInc) %>% sum
 
 datainc %>% 
-  filter(virus == 1, season == "11/12") %>% 
+  # filter(virus == 1, season == "11/12") %>% 
   pull(DataInc) %>% sum
 
 incdiff %>% 
@@ -134,24 +141,25 @@ incdiff %>%
   mutate(CumInc = cumsum(Inc), 
          CumBaselineInc = cumsum(BaselineInc), 
          CumDataInc = cumsum(DataInc), 
-         CumLoInc = cumsum(LoInc), 
-         CumHiInc = cumsum(HiInc)) %>% 
+         CumloCIInc = cumsum(loCIInc),
+         CumhiCIInc = cumsum(hiCIInc)
+  ) %>% 
   # mutate(CumInc = cumsum(Inc/CatchmentPop*1e5), CumBaselineInc = cumsum(BaselineInc/CatchmentPop*1e5)) %>% 
   ggplot(aes(x = t)) + 
-  geom_ribbon(aes(ymin = CumLoInc, ymax = CumHiInc, fill = "Best model")) + 
+  geom_ribbon(aes(ymin = CumloCIInc, ymax = CumhiCIInc, fill = "Best model")) + 
   geom_line(aes(y = CumInc, colour = "Best model"), linewidth = 1) + 
   # geom_line(aes(y = CumLoInc, colour = "Best model"), alpha = 0.5) +
   # geom_line(aes(y = CumHiInc, colour = "Best model"), alpha = 0.5) +
   geom_line(aes(y = CumBaselineInc, colour = "No interaction"), linewidth = 1) + 
   geom_line(aes(y = CumDataInc, colour = "Data"), linewidth = 1) +
   facet_grid(virus~season, scales = "free_y") + 
-  labs(x = "Week relative to start of year", y = "Cumulative cases per 100 000", colour = "", fill = "Credibility interval") + 
+  labs(x = "Week relative to start of year", y = "Cumulative cases per 100 000", colour = "", fill = "95% confidence interval") + 
   scale_colour_manual(values = c(`Best model` = "blue", `No interaction`="orange3", Data = "red")) + 
   scale_fill_manual(values = c(`Best model` = "lightblue")) + 
   theme_bw() + 
   theme(axis.text.x = element_text(size = 6))
 
-ggsave(filename = "figtab/Fig5_cumulativeCases_CI.png", width = 25, height = 15, units = "cm", dpi = 600)
+ggsave(filename = "figtab/Fig4_cumulativeCases_CI.png", width = 25, height = 15, units = "cm", dpi = 600)
 
 incdiff %>% 
   # left_join(catchment_season) %>% 

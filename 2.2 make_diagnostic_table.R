@@ -141,7 +141,8 @@ aic_table = NULL
 aic_comp = NULL
 for(j in 0:10){
   print(j)
-  r_vec = 0:5
+  r_vec = 0 #paper v17
+  # r_vec = 0:5 #paper v16
   
   if(j == 0){
     this_id = "simpleInter_"
@@ -219,7 +220,8 @@ aic_table %>%
 ##### TABLE S4
 
 tableS4_comprehensive <- aic_table %>% 
-  filter(jump == 3) %>% 
+  # filter(jump == 3) %>% #paper v16
+  filter(jump == 0) %>% #paper v17
   mutate(season = ifelse(season == "common", season, gsub("^([0-9][0-9])", "20\\1/", season))) %>%
   mutate(W1 = ifelse(season == "common", NA, as.character(ISOweek::ISOweek2date(paste0("20", gsub(".*/", "", season), "-W01-1"))))) %>% 
   # mutate(across(c("best", "loCI", "hiCI"), ~ifelse(Parameter == "lh", 10^.x, .x))) %>% 

@@ -27,9 +27,16 @@
   library(ggpubr) 
   
   stem = "output/"
-  id = "validateSimpleInter_"
-  post = read_csv(paste0(stem, id, virus1, "+", virus2, "_jump", 3, "_rep", 1, 
-                             "_posterior.csv"))
+  
+  # these values from v16 of the paper
+  # id = "validateSimpleInter_"
+  # post = read_csv(paste0(stem, id, virus1, "+", virus2, "_jump", 3, "_rep", 1, 
+  #                            "_posterior.csv"))
+  
+  # these values for v17
+  id = "simpleInter_"
+  post = read_csv(paste0(stem, id, virus1, "+", virus2, "_jump", 0, "_rep", 0, 
+                         "_posterior.csv"))
   
   burnin = 0  
   
@@ -147,7 +154,7 @@
   
   # plot_reps <- ggarrange(plot_lh, plot_kappa, plot_betaeta,  nrow = 3, common.legend = T)
   
-  plot_reps %>% ggsave(filename = "figtab/Fig3_noninteractionParams.png", width = 25, height = 25, units = "cm", dpi = 600)
+  plot_reps %>% ggsave(filename = "figtab/Fig2_noninteractionParams.png", width = 25, height = 25, units = "cm", dpi = 600)
   # plot_reps %>% ggsave(filename = "~/SanOdin/output/nonint_params.png", width = 15, height = 15, units = "cm")
                          
   

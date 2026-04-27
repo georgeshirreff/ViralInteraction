@@ -124,3 +124,100 @@ plot_comp_obj <- plot_comp_data_date %>%
 # plot_comp_obj
 ggsave(plot_comp_obj, filename = "figtab/FigS6_data2goodmodels.png", width = 25, height = 12, units = "cm", dpi = 600)
 
+
+
+
+
+#####
+
+comp_table <- rbind(nointer, bestinter, nextbestinter, phase_nointer, phase_bestinter, phase_nextbestinter) %>% 
+  filter(season == "12/13") %>%
+  group_by(virus, in_phase, interaction, intLevel, t) %>% 
+  summarise(Inc = sum(Inc)) %>% 
+  group_by(virus, in_phase, interaction, intLevel) %>% 
+  summarise(peak_time = t[Inc == max(Inc)], Inc = sum(Inc)) %>% 
+  arrange(virus, in_phase) %>% 
+  mutate(virus =fct_recode(factor(virus, levels = c(1, 2, 12)), `Influenza only`="1", `RSV only`="2", `Codetection`="12")) %>% 
+  mutate(interaction = ifelse(interaction, "Interaction", "No interaction")) %>% 
+  mutate(in_phase = ifelse(in_phase, "Simultaneous peaks", "Original"))
+
+
+comp_table_wide <- comp_table %>% 
+  pivot_wider(id_cols = c("virus", "in_phase"), names_from = c("interaction", "intLevel"), values_from = c("Inc", "peak_time")) %>% 
+  mutate(averted_best = `Inc_No interaction_NA` - `Inc_Interaction_best`, 
+         averted_nextbest = `Inc_No interaction_NA` - `Inc_Interaction_nextbest`) %>% 
+  mutate(pAverted_best = averted_best/`Inc_No interaction_NA`, 
+         pAverted_nextbest = averted_nextbest/`Inc_No interaction_NA`) %>% 
+  relocate(starts_with("peak_time"), .after = everything()) %>% 
+  mutate(shift_best = `peak_time_Interaction_best` - `peak_time_No interaction_NA`, 
+         shift_nextbest = `peak_time_Interaction_nextbest` - `peak_time_No interaction_NA`) %>% 
+  mutate(averted_best = paste0(round(averted_best), " (", round(pAverted_best*100), "%)"), 
+         averted_nextbest = paste0(round(averted_nextbest), " (", round(pAverted_nextbest*100), "%)")) %>% 
+  select(virus, in_phase, starts_with("averted"), starts_with("shift")) %>% 
+  ungroup
+
+comp_table_wide_long <-
+  comp_table_wide %>% pivot_longer(-c("virus", "in_phase"), names_sep = "_", names_to = c(".value", "intLevel")) %>% 
+  mutate(estimate = case_match(intLevel, "best" ~ "Best (theta1)", 
+                               "nextbest" ~ "2nd best (psi1)")) %>% 
+  mutate(estimate = factor(estimate, levels = c("Best (theta1)", "2nd best (psi1)"))) %>% 
+  arrange(virus, in_phase, estimate) %>% 
+  group_by(virus, in_phase) %>% 
+  summarise(across(c("estimate", "averted", "shift"), ~paste0(.x, collapse = "\n")))
+
+
+
+tbs <- lapply(split(comp_table_wide_long, comp_table_wide_long$in_phase), "[", -2)
+# tbs <- lapply(split(comp_table_wide, ~in_phase+virus), "[", -2)
+df <- tibble(x   = rep(Inf, length(tbs)), 
+             y   = rep(Inf, length(tbs)), 
+             in_phase = levels(as.factor(comp_table_wide_long$in_phase)), 
+             tbl = tbs)
+
+
+
+write_csv2(comp_table_wide_long, file = "figtab/Tab3_simultaneouspeaks_lobesthi.csv")
+
+vir_cols = c("Influenza only"="red", "RSV only" = "blue", Codetection ="violet")
+simult_plot <- rbind(nointer, bestinter, nextbestinter, phase_nointer, phase_bestinter, phase_nextbestinter) %>% 
+  filter(season == "12/13") %>% 
+  mutate(intLevel = case_match(intLevel, "best" ~ "Best (theta1)", 
+                               "nextbest" ~ "2nd best (psi1)")) %>% 
+  mutate(intLevel = factor(intLevel, levels = c("None", "Best (theta1)", "2nd best (psi1)"))) %>% 
+  mutate(intLevel = replace_na(intLevel, "None")) %>% 
+  # filter(!intLevel == "None") %>% 
+  group_by(virus, in_phase, intLevel, t) %>% 
+  summarise(Inc = sum(Inc)) %>% 
+  arrange(virus, in_phase, intLevel) %>% 
+  mutate(virus =fct_recode(factor(virus, levels = c(1, 2, 12)), `Influenza only`="1", `RSV only`="2", `Codetection`="12")) %>% 
+  # mutate(interaction = ifelse(interaction, "Interaction", "No interaction")) %>% 
+  mutate(in_phase = ifelse(in_phase, "Simultaneous peaks", "Original")) %>% 
+  ggplot(aes(x = t, y = Inc, colour = virus, linetype = intLevel)) + 
+  geom_line() + 
+  # scale_colour_manual(values = vir_cols)+ 
+  scale_linetype_manual(values = c(None = "solid", `Best (theta1)` = "dashed", `2nd best (psi1)` = "dotted", `Low estimate` = "dotdash")) + 
+  facet_grid(. ~ in_phase) + 
+  theme_bw() + 
+  labs(x = "Weeks relative to start of year", 
+       y = "Cases per 100 000", 
+       colour = "Virus", linetype = "Interaction") + 
+  coord_cartesian(ylim = c(0, 75))
+
+simult_plot + 
+  ggpp::geom_table(data = df, aes(x = x, y = y, label = tbs),
+                   inherit.aes = FALSE,
+                   table.colnames = T, table.hjust = 1,
+                   table.theme = gridExtra::ttheme_default(base_size = 5, 
+                                                           core = list(
+                                                             padding=unit(c(3, 2), "mm"), 
+                                                             core.just = "right", 
+                                                             # fg_params = list(cex = 0.5, lineheight = 0.6, col = "black"),  # shrink body rows
+                                                             # fg_params = list(col = "darkgrey"),
+                                                             bg_params = list(cex = 0.5, fill = "white", col = "darkgrey")
+                                                           )
+                   ))
+
+
+ggsave(filename = "figtab/Fig5_simultaneous_peaks.png", width = 20, height = 12, units = "cm", dpi = 600)
+
+

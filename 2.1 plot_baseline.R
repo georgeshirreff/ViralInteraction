@@ -39,6 +39,7 @@
                          "_posterior.csv"))
   
   burnin = 0  
+  thin = 1
   
   if(burnin > max(post$Iteration)){stop("burnin too long")}
   
@@ -157,4 +158,35 @@
   plot_reps %>% ggsave(filename = "figtab/Fig2_noninteractionParams.png", width = 25, height = 25, units = "cm", dpi = 600)
   # plot_reps %>% ggsave(filename = "~/SanOdin/output/nonint_params.png", width = 15, height = 15, units = "cm")
                          
+  
+  
+# output values as a table
+  
+  tableS4_comprehensive <- post_ci %>%
+    #   # filter(jump == 3) %>% #paper v16
+    #   filter(jump == 0) %>% #paper v17
+    mutate(season = ifelse(season == "common", season, gsub("^([0-9][0-9])", "20\\1/", season))) %>%
+    mutate(W1 = ifelse(season == "common", NA, as.character(ISOweek::ISOweek2date(paste0("20", gsub(".*/", "", season), "-W01-1"))))) %>% 
+    # mutate(across(c("best", "loCI", "hiCI"), ~ifelse(Parameter == "lh", 10^.x, .x))) %>% 
+    # mutate(across(c("best", "loCI", "hiCI"), ~ifelse(Parameter == "eta", 
+    #                                                  as.character(format.Date(as.Date(W1) - 7 + .x*7, "%b %d")), 
+    #                                                  as.character(format(signif(.x, 3), scientific = F, drop0trailing = T))))) %>% 
+    mutate(across(c("best", "loCI", "hiCI"), ~ifelse(Parameter == "lh", 10^.x, .x))) %>%
+    mutate(Parameter = ifelse(Parameter == "lh", "h", Parameter)) %>% 
+    mutate(across(c("best", "loCI", "hiCI"), ~case_when(Parameter == "eta" ~ as.character(format.Date(as.Date(W1) - 7 + .x*7, "%b %d")),
+                                                        Parameter == "beta" ~ as.character(format(signif(.x, 3), scientific = F, drop0trailing = T)),
+                                                        Parameter %in% c("h", "kappa") ~ paste0(format(signif(.x*100, 3), scientific = F, drop0trailing = T), "%"), 
+                                                        T ~ NA)
+    )) %>% 
+    mutate(Parameter = factor(Parameter, levels = c("beta", "eta", "h", "kappa"))) %>% 
+    mutate(age_group = factor(age_group, levels = c(age_vec, age2_vec, "all"))) %>% 
+    arrange(Parameter, virus, season, age_group) %>% 
+    filter(!is.na(Parameter)) %>% 
+    mutate(virus = c("Influenza", "RSV")[as.numeric(virus)]) %>% 
+    relocate(age_group, .before = "season")
+  
+  
+  tableS4_comprehensive %>%
+    transmute(Parameter, virus, age_group, season, estimate = paste0(best, " (", loCI, "-", hiCI, ")")) %>%
+    write_csv2("figtab/TabS4_allparamFits.csv")
   

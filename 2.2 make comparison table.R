@@ -2,7 +2,7 @@ library(tidyverse)
 
 virus1 = "Influenza"
 virus2 = "RSV"
-id = "interOnly_" #
+id = "interOnly_" #"simpleInter_" # 
 read_id = "simpleInter_"
 jumpfile = "interactionOnly"
 
@@ -16,19 +16,21 @@ param_jumps = read_csv(
   show_col_types = F
 ) 
 
-baseline_post %>% 
-  select(-Iteration, -Loglik, -Accepted, -Season) %>% 
-  select_if(~length(unique(.x)) > 1) %>% 
-  ncol
+# baseline_post %>% 
+#   select(-Iteration, -Loglik, -Accepted, -Season) %>% 
+#   select_if(~length(unique(.x)) > 1) %>% 
+#   ncol
+
 
 param_jumps %>% 
-  select(jump, interaction_params) %>% 
+  select(where(~sum(.x) != 0)) %>% 
   View
+
 
 K = 66
 
-this_rep = 3
-this_jump = 3
+this_rep = 0
+this_jump = 2
 for(this_rep in 0:5){
   baseline_stem = paste0("output/", read_id, virus1, "+", virus2, "_jump", 0, "_rep", this_rep)
   baseline_post <- read_csv(file = paste0(baseline_stem, "_posterior.csv"), show_col_types = F) %>% 
@@ -37,7 +39,6 @@ for(this_rep in 0:5){
     rename_all(~gsub("^omega", "lromega", .x)) %>% 
     rename_all(~gsub("^psi", "lrpsi", .x))
   
-  
   baseline_loglik <- baseline_post %>% 
     arrange(-Loglik) %>% 
     slice(1) %>% 
@@ -45,13 +46,16 @@ for(this_rep in 0:5){
   
   baseline_aic = 2*K - 2*baseline_loglik
     
-  for(this_jump in 55:1){
+  for(this_jump in 1:10){
     print(c(this_rep, this_jump))
     
     full_stem = paste0("output/", id, virus1, "+", virus2, "_jump", this_jump, "_rep", this_rep)
     
     mcmc_post <- read_csv2(file = paste0(full_stem, "_posterior.csv"), show_col_types = F)
 
+    mcmc_post <- mcmc_post %>% 
+      mutate(across(starts_with(c("omega", "psi")), list(lr = ~log10(1/.x)), .names = "{.fn}{.col}")) %>% 
+      select(-starts_with(c("omega", "psi")))
   
     # mcmc_post %>% 
     #   select(-Iteration, -Loglik, -Accepted, -Season) %>% 
@@ -86,9 +90,11 @@ for(this_rep in 0:5){
                   # hi_MCMC = max(fit1), 
                   # lo_improvement = min(fit1[improvement]), 
                   # hi_improvement = max(fit1[improvement]),                 
-                  lo1_AICimprovement = min(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
-                  hi1_AICimprovement = max(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
-                  ESS1 = coda::effectiveSize(fit1)
+                  # lo1_AICimprovement = min(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
+                  # hi1_AICimprovement = max(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA),
+                  lo1_AICimprovement = min(fit1[AICimprovement & is.finite(fit1)]) %>% ifelse(is.finite(.), ., NA), 
+                  hi1_AICimprovement = max(fit1[AICimprovement & is.finite(fit1)]) %>% ifelse(is.finite(.), ., NA), 
+                  ESS1 = coda::effectiveSize(fit1[is.finite(fit1)])
         )
       
       if(F){
@@ -133,10 +139,10 @@ for(this_rep in 0:5){
                   # hi_MCMC = max(fit1), 
                   # lo_improvement = min(fit1[improvement]), 
                   # hi_improvement = max(fit1[improvement]),                 
-                  lo1_AICimprovement = min(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
-                  hi1_AICimprovement = max(fit1[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
-                  lo2_AICimprovement = min(fit2[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
-                  hi2_AICimprovement = max(fit2[AICimprovement]) %>% ifelse(is.finite(.), ., NA), 
+                  lo1_AICimprovement = min(fit1[AICimprovement & is.finite(fit1)]) %>% ifelse(is.finite(.), ., NA), 
+                  hi1_AICimprovement = max(fit1[AICimprovement & is.finite(fit1)]) %>% ifelse(is.finite(.), ., NA), 
+                  lo2_AICimprovement = min(fit2[AICimprovement & is.finite(fit2)]) %>% ifelse(is.finite(.), ., NA), 
+                  hi2_AICimprovement = max(fit2[AICimprovement & is.finite(fit2)]) %>% ifelse(is.finite(.), ., NA), 
                   ESS1 = coda::effectiveSize(fit1), 
                   ESS2 = coda::effectiveSize(fit2))
       # }
@@ -144,7 +150,7 @@ for(this_rep in 0:5){
     }
     
     
-    if(this_rep == 0 & this_jump == 55){
+    if(this_rep == 0 & this_jump == 1){
       AICimprovement_table = AICimprovement_table_piece
     } else {
       AICimprovement_table = bind_rows(AICimprovement_table, AICimprovement_table_piece)

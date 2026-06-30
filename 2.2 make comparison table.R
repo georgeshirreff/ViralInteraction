@@ -16,21 +16,22 @@ param_jumps = read_csv(
   show_col_types = F
 ) 
 
+
 # baseline_post %>% 
 #   select(-Iteration, -Loglik, -Accepted, -Season) %>% 
 #   select_if(~length(unique(.x)) > 1) %>% 
 #   ncol
 
 
-param_jumps %>% 
-  select(where(~sum(.x) != 0)) %>% 
-  View
+# param_jumps %>% 
+  # select(where(~sum(.x) != 0)) %>% 
+  # View
 
 
 K = 66
 
 this_rep = 0
-this_jump = 2
+this_jump = 3
 for(this_rep in 0:5){
   baseline_stem = paste0("output/", read_id, virus1, "+", virus2, "_jump", 0, "_rep", this_rep)
   baseline_post <- read_csv(file = paste0(baseline_stem, "_posterior.csv"), show_col_types = F) %>% 
@@ -46,7 +47,7 @@ for(this_rep in 0:5){
   
   baseline_aic = 2*K - 2*baseline_loglik
     
-  for(this_jump in 1:10){
+  for(this_jump in 1:55){
     print(c(this_rep, this_jump))
     
     full_stem = paste0("output/", id, virus1, "+", virus2, "_jump", this_jump, "_rep", this_rep)
@@ -66,7 +67,8 @@ for(this_rep in 0:5){
       filter(jump == this_jump) %>% 
       select(-jump) %>% 
       select(-starts_with("beta"), -starts_with("eta"), -starts_with("pi"), -starts_with("lh"), -starts_with("kappa"), -starts_with("alpha"), -starts_with("gamma")) %>% 
-      select_if(~.x > 0) %>% names
+      select_if(~.x > 0) %>% names %>% 
+      {.[order(. != "theta1", . != "theta2")]}
     
     baseline_paramDefault <- baseline_post[fit_params] %>% unique %>% unlist
     
@@ -173,6 +175,8 @@ for(this_rep in 0:5){
 }
 
 
+
+
 AICimprovement_table %>% 
   filter(rep == 0) %>% 
   filter(jump < 11) %>%
@@ -197,6 +201,34 @@ AICimprovement_table %>%
   mutate(Estimate = ifelse(deltaAIC == "<0", NA, Estimate)) %>% 
   write_csv2("figtab/Tab2_interactionFits_twoStage.csv")
 
+AICimprovement_table %>% 
+  filter(rep == 0) %>%
+  # filter(jump < 11) %>%
+  # filter(rep == 0) %>% 
+  arrange(best_AIC) %>% 
+  mutate(across(c("paramDefault1", "best1", "lo1_AICimprovement", "hi1_AICimprovement"), ~ifelse(grepl("^lr", param1), 10^.x, .x)), 
+         across(c("paramDefault2", "best2", "lo2_AICimprovement", "hi2_AICimprovement"), ~ifelse(grepl("^lr", param2), 10^.x, .x))) %>%
+  
+  mutate(param1 = gsub("^lr", "1/", param1), 
+         param2 = gsub("^lr", "1/", param2)) %>% 
+  transmute(jump, param1, param2, K = ifelse(is.na(param2), 67, 68), deltaAIC = baseline_aic - best_AIC, Baseline1 = paramDefault1, Baseline2 = paramDefault2, 
+            Estimate1 = paste0(round(best1, 1), " (", round(lo1_AICimprovement, 1), "-", round(hi1_AICimprovement, 1), ")"), 
+            Estimate2 = ifelse(is.na(best2), "", paste0(round(best2, 1), " (", round(lo2_AICimprovement, 1), "-", round(hi2_AICimprovement, 1), ")"))
+  ) %>% 
+  {bind_rows(., tibble(jump = 0, param1 = "BASELINE", K = 66, deltaAIC = 0))} %>% 
+  left_join(param_description %>% transmute(param1 = paste0(Parameter, ifelse(is.na(virus), "", virus)), description1 = description)) %>% 
+  left_join(param_description %>% transmute(param2 = paste0(Parameter, ifelse(is.na(virus), "", virus)), description2 = description)) %>% 
+  arrange(-deltaAIC) %>% 
+  relocate(description1, Baseline1, .after = "param1") %>% 
+  relocate(description2, Baseline2, .after = "param2") %>% 
+  mutate(deltaAIC = case_when(deltaAIC > 0 ~ format(round(deltaAIC, 1), digits = 2), 
+                              deltaAIC == 0 ~ "0", 
+                              T ~ "<0")) %>% 
+  mutate(Estimate1 = ifelse(deltaAIC == "<0", NA, Estimate1), 
+         Estimate2 = ifelse(deltaAIC == "<0", NA, Estimate2)) %>% 
+  filter((grepl("omega", param1) + grepl("psi", param2)) < 2) %>% 
+  filter((grepl("psi", param1) + grepl("omega", param2)) < 2) %>% 
+  write_csv2("figtab/SuppTab2_interactionFits_pairs_twoStage.csv")
 
 
 

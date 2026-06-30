@@ -55,15 +55,21 @@ plot_obj <- plot_data_date %>%
   left_join(catchment_season) %>%
   mutate(across(c("DataHosp", "ModelHosp", "model_loCI", "model_hiCI"), ~.x/CatchmentPop*1e5)) %>%
   ggplot(aes(x = week_begins)) + 
-  {if(T) geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "CI"), show.legend = FALSE)} + 
-  
-  geom_line(aes(y = ModelHosp,  linetype = "Best model"), colour = "blue") + 
+  # {if(T) geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "CI"), show.legend = T)} + 
+  # geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "CI"), show.legend = T) + 
+  # geom_line(aes(y = ModelHosp,  linetype = "Best model"), colour = "blue") + 
+  # geom_point(aes(y = DataHosp, shape = "Data"), colour = "red", size = 0.8) +
+  geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "95% CI")) +
   geom_point(aes(y = DataHosp, shape = "Data"), colour = "red", size = 0.8) +
-  facet_grid(virus~., scales = "free_y") + 
-  labs(x = "Week", y = "Cases per 100 000", colour = "", linetype = "", shape = "") + 
+  geom_line(aes(y = ModelHosp,  linetype = "Best model"), colour = "blue") +
+  facet_grid(virus~., scales = "free_y") +
+  labs(x = "Week", y = "Cases per 100 000", linetype = "", shape = "", fill = "") +
   theme_bw()+ 
-  scale_fill_manual(values = c(CI = "lightblue")) + 
+  theme(legend.spacing.y = unit(0.3, "cm")) + 
+  scale_fill_manual(values = c(`95% CI` = "lightblue")) + 
   scale_x_date(date_breaks = "1 year", date_labels = "%Y", expand = c(0, 0))
+
+plot_obj
 
 # ggsave(plot_obj, filename = "figtab/Fig4.png", width = 25, height = 15, units = "cm", dpi = 600)
 # ggsave(plot_obj, filename = "figtab/Fig4_dataBestmodel.png", width = 25, height = 15, units = "cm", dpi = 600)
@@ -80,17 +86,16 @@ plot_data_date %>%
   left_join(catchment_season) %>%
   mutate(across(c("DataHosp", "ModelHosp", "model_loCI", "model_hiCI"), ~.x/CatchmentPop*1e5)) %>%
   ggplot(aes(x = week_begins)) + 
-  {if(include_ci) geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "CI"), show.legend = FALSE)} + 
-  
+  geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "95% CI")) + 
   geom_line(aes(y = ModelHosp,  linetype = "Best model"), colour = "blue") + 
   geom_point(aes(y = DataHosp, shape = "Data"), colour = "red", size = 0.8) +
   facet_grid(age_group~.
              # , scales = "free_y"
   ) + 
-  labs(x = "Week", y = "Cases per 100 000", colour = "", linetype = "", shape = "") + 
+  labs(x = "Week", y = "Cases per 100 000", fill = "", linetype = "", shape = "") + 
   theme_bw()+ 
   coord_cartesian(ylim = c(0, 0.22)) + 
-  scale_fill_manual(values = c(CI = "lightblue")) + 
+  scale_fill_manual(values = c(`95% CI` = "lightblue")) + 
   scale_x_date(date_breaks = "1 year", date_labels = "%Y", expand = c(0, 0))
 
 ggsave("figtab/FigS4_dataBestmodelAge.png", width = 25, height = 18, units = "cm")
@@ -120,14 +125,14 @@ plot_ili_obj <- plot_ili_date %>%
   mutate(model_loCI = qlnorm(0.025, meanlog = log(ModelILI + 1), sdlog = sd(log(ili$IncRate1e5 + 1), na.rm = T), lower.tail = T), 
          model_hiCI = qlnorm(0.025, meanlog = log(ModelILI + 1), sdlog = sd(log(ili$IncRate1e5 + 1), na.rm = T), lower.tail = F)) %>%  
   ggplot(aes(x = week_begins)) + 
-  {if(include_ci) geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "CI"), show.legend = FALSE)} +
+  geom_ribbon(aes(ymin = model_loCI, ymax = model_hiCI, fill = "95% CI")) +
   
   geom_line(aes(y = ModelILI,  linetype = "Best model"), colour = "blue") + 
   geom_point(aes(y = DataILI, shape = "Data"), colour = "red", size = 0.8) +
   facet_grid(age2_group~., scales = "free_y") + 
-  labs(x = "Week", y = "ILI per 100 000", colour = "", linetype = "", shape = "") + 
+  labs(x = "Week", y = "ILI per 100 000", fill = "", linetype = "", shape = "") + 
   theme_bw()+ 
-  scale_fill_manual(values = c(CI = "lightblue")) + 
+  scale_fill_manual(values = c(`95% CI` = "lightblue")) + 
   scale_x_date(date_breaks = "1 year", date_labels = "%Y", expand = c(0, 0)) + 
   coord_cartesian(ylim = c(0, 800))
 
